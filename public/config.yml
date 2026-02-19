@@ -1,0 +1,37 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "public/uploads"
+public_folder: "/uploads"
+
+collections:
+  - name: "pages"
+    label: "Seiten"
+    files:
+      - file: "src/content/home.md"
+        name: "home"
+        label: "Startseite"
+        fields:
+          - {label: "Titel", name: "title", widget: "string"}
+          - {label: "Hero Text", name: "heroText", widget: "text"}
+          - {label: "Beschreibung", name: "description", widget: "markdown"}
+          
+  - name: "products"
+    label: "Produkte"
+    folder: "src/content/products"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - {label: "Produktname", name: "title", widget: "string"}
+      - {label: "Kategorie", name: "category", widget: "select", options: ["Hund", "Katze", "Kleintier", "Zubehör"]}
+      - {label: "Bild", name: "image", widget: "image"}
+      - {label: "Beschreibung", name: "description", widget: "markdown"}
+      - {label: "Affiliate-Link", name: "affiliateLink", widget: "string"}
+      - {label: "Preis", name: "price", widget: "string", required: false}
+      - {label: "Bestseller", name: "bestseller", widget: "boolean", default: false}
+backend:
+  name: git-gateway
+  repo: chndgn97/haustieroase  # dein GitHub Repo
+  branch: main
+  base_url: https://lustiger-name-123.netlify.app  # deine Netlify-URL
