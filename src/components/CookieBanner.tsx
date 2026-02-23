@@ -42,6 +42,7 @@ export default function CookieBanner() {
   const [analytics, setAnalytics] = useState(false)
   const [marketing, setMarketing] = useState(false)
 
+  // Initial load
   useEffect(() => {
     setMounted(true)
     const existing = readConsent()
@@ -54,6 +55,7 @@ export default function CookieBanner() {
     setOpen(false)
   }, [])
 
+  // Footer -> Cookie-Einstellungen öffnen
   useEffect(() => {
     const openHandler = () => {
       const existing = readConsent()
@@ -68,6 +70,7 @@ export default function CookieBanner() {
     return () => window.removeEventListener("open-cookie-settings", openHandler as EventListener)
   }, [])
 
+  // ESC close
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e: KeyboardEvent) => {
@@ -77,6 +80,7 @@ export default function CookieBanner() {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [open])
 
+  // Scroll lock
   useEffect(() => {
     if (!open) {
       document.body.style.overflow = ""
@@ -112,28 +116,32 @@ export default function CookieBanner() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999]"
+      className="fixed inset-0 z-[9999] isolate"
       style={{ WebkitTapHighlightColor: "transparent" }}
     >
-      {/* ✅ Overlay: nimmt Touch an */}
-      <button
-        type="button"
-        aria-label="Overlay schließen"
-        className="absolute inset-0 bg-warm-brown/40 backdrop-blur-sm z-0 touch-manipulation"
+      {/* ✅ Backdrop VISUELL – aber NIE klickbar (iOS Fix) */}
+      <div className="absolute inset-0 bg-warm-brown/40 pointer-events-none" />
+      <div className="absolute inset-0 backdrop-blur-sm pointer-events-none" />
+
+      {/* ✅ Click-Catcher für "außerhalb klicken" (klickbar) */}
+      <div
+        className="absolute inset-0"
         onClick={() => setOpen(false)}
+        role="presentation"
       />
 
-      {/* ✅ Wrapper: pointer-events aus, damit nur Modal klickbar ist */}
-      <div className="absolute inset-0 z-10 pointer-events-none flex items-end sm:items-center justify-center p-4">
-        {/* ✅ Modal: pointer-events an */}
+      {/* ✅ Modal Layer */}
+      <div className="absolute inset-0 flex items-end sm:items-center justify-center p-4">
         <div
-          className="pointer-events-auto w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden touch-manipulation"
+          className="w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
-          onClick={(e) => e.stopPropagation()}
+          // ✅ iOS Safari Touch/Stack Fix
+          style={{ WebkitTransform: "translateZ(0)" }}
         >
           {/* Header */}
-          <div className="p-6 flex items-start justify-between gap-4 select-none">
+          <div className="p-6 flex items-start justify-between gap-4">
             <div>
               <h3 className="font-fredoka text-2xl font-bold text-warm-brown">Cookie-Einstellungen</h3>
               <p className="mt-2 font-nunito text-warm-brown/70">
@@ -146,7 +154,7 @@ export default function CookieBanner() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Schließen"
-              className="text-warm-brown/60 hover:text-petal-pink transition-colors touch-manipulation"
+              className="text-warm-brown/60 hover:text-petal-pink transition-colors"
               title="Schließen"
             >
               <X className="w-6 h-6" />
@@ -165,12 +173,12 @@ export default function CookieBanner() {
               </p>
             </div>
 
-            {/* Settings toggle */}
+            {/* Settings */}
             <div className="mt-4">
               <button
                 type="button"
                 onClick={() => setShowSettings((v) => !v)}
-                className="font-nunito font-semibold text-warm-brown hover:text-petal-pink transition-colors touch-manipulation"
+                className="font-nunito font-semibold text-warm-brown hover:text-petal-pink transition-colors"
               >
                 {showSettings ? "Einstellungen ausblenden" : "Einstellungen anzeigen"}
               </button>
@@ -219,7 +227,7 @@ export default function CookieBanner() {
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-full font-fredoka touch-manipulation"
+                className="rounded-full font-fredoka"
                 onClick={acceptNecessaryOnly}
               >
                 Nur notwendige
@@ -227,7 +235,7 @@ export default function CookieBanner() {
 
               <Button
                 type="button"
-                className="rounded-full font-fredoka bg-gradient-to-r from-petal-pink to-peach text-white touch-manipulation"
+                className="rounded-full font-fredoka bg-gradient-to-r from-petal-pink to-peach text-white"
                 onClick={showSettings ? saveSettings : acceptAll}
                 title={showSettings ? "Auswahl speichern" : "Alle Cookies akzeptieren"}
               >
