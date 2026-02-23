@@ -42,7 +42,6 @@ export default function CookieBanner() {
   const [analytics, setAnalytics] = useState(false)
   const [marketing, setMarketing] = useState(false)
 
-  // verhindert doppeltes Init durch StrictMode
   const didInit = useRef(false)
 
   useEffect(() => {
@@ -120,30 +119,22 @@ export default function CookieBanner() {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[9999]"
-      style={{ WebkitTapHighlightColor: "transparent" }}
-    >
-      {/* ✅ BACKDROP (nur visuell, niemals klickbar) */}
-      <div className="absolute inset-0 z-0 pointer-events-none bg-warm-brown/40" />
-      <div className="absolute inset-0 z-0 pointer-events-none backdrop-blur-sm" />
-
-      {/* ✅ CLICK-CATCHER: nur außerhalb Modal (z-10) */}
-      <button
-        type="button"
-        className="absolute inset-0 z-10 bg-transparent"
-        aria-label="Cookie Banner schließen"
+    <div className="fixed inset-0 z-[9999]" style={{ WebkitTapHighlightColor: "transparent" }}>
+      {/* ✅ Backdrop ist der einzige “Außen-Klick”-Bereich */}
+      <div
+        className="absolute inset-0 z-0 bg-warm-brown/40"
         onClick={() => setOpen(false)}
       />
+      {/* Blur nur visuell, nicht klickbar */}
+      <div className="absolute inset-0 z-0 pointer-events-none backdrop-blur-sm" />
 
-      {/* ✅ MODAL: ganz oben (z-20) */}
-      <div className="absolute inset-0 z-20 flex items-end sm:items-center justify-center p-4">
+      {/* ✅ Modal oben */}
+      <div className="absolute inset-0 z-10 flex items-end sm:items-center justify-center p-4">
         <div
           role="dialog"
           aria-modal="true"
           className="w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden"
           onClick={(e) => e.stopPropagation()}
-          // iOS stacking/touch stabilisieren
           style={{ WebkitTransform: "translateZ(0)" }}
         >
           {/* Header */}
