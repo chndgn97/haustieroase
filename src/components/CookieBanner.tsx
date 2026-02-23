@@ -31,8 +31,6 @@ const readConsent = (): Consent | null => {
 const writeConsent = (consent: Omit<Consent, "timestamp">) => {
   const payload: Consent = { ...consent, timestamp: Date.now() }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
-
-  // 🔔 Event für Analytics Loader etc.
   window.dispatchEvent(new CustomEvent("cookie-consent-changed", { detail: payload }))
 }
 
@@ -44,26 +42,20 @@ export default function CookieBanner() {
   const [analytics, setAnalytics] = useState(false)
   const [marketing, setMarketing] = useState(false)
 
-  // -----------------------------------
-  // INITIAL LOAD
-  // -----------------------------------
+  // Initial load
   useEffect(() => {
     setMounted(true)
     const existing = readConsent()
-
     if (!existing) {
       setOpen(true)
       return
     }
-
     setAnalytics(existing.analytics)
     setMarketing(existing.marketing)
     setOpen(false)
   }, [])
 
-  // -----------------------------------
-  // 🔥 WICHTIG: Footer "Cookie-Einstellungen" Listener
-  // -----------------------------------
+  // Footer -> "Cookie-Einstellungen"
   useEffect(() => {
     const openHandler = () => {
       const existing = readConsent()
@@ -76,13 +68,10 @@ export default function CookieBanner() {
     }
 
     window.addEventListener("open-cookie-settings", openHandler as EventListener)
-    return () =>
-      window.removeEventListener("open-cookie-settings", openHandler as EventListener)
+    return () => window.removeEventListener("open-cookie-settings", openHandler as EventListener)
   }, [])
 
-  // -----------------------------------
-  // ESC Close
-  // -----------------------------------
+  // ESC close
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e: KeyboardEvent) => {
@@ -92,9 +81,7 @@ export default function CookieBanner() {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [open])
 
-  // -----------------------------------
-  // Scroll Lock
-  // -----------------------------------
+  // Scroll lock
   useEffect(() => {
     if (!open) {
       document.body.style.overflow = ""
@@ -111,160 +98,144 @@ export default function CookieBanner() {
     return Boolean(readConsent())
   }, [mounted])
 
+  // Wenn Consent vorhanden und Banner nicht explizit geöffnet -> nichts anzeigen
   if (!mounted || (!open && hasConsent)) return null
 
-  // -----------------------------------
-  // ACTIONS
-  // -----------------------------------
   const acceptAll = () => {
-    writeConsent({
-      necessary: true,
-      analytics: true,
-      marketing: true,
-      version: CONSENT_VERSION,
-    })
+    writeConsent({ necessary: true, analytics: true, marketing: true, version: CONSENT_VERSION })
     setOpen(false)
   }
 
   const acceptNecessaryOnly = () => {
-    writeConsent({
-      necessary: true,
-      analytics: false,
-      marketing: false,
-      version: CONSENT_VERSION,
-    })
+    writeConsent({ necessary: true, analytics: false, marketing: false, version: CONSENT_VERSION })
     setOpen(false)
   }
 
   const saveSettings = () => {
-    writeConsent({
-      necessary: true,
-      analytics,
-      marketing,
-      version: CONSENT_VERSION,
-    })
+    writeConsent({ necessary: true, analytics, marketing, version: CONSENT_VERSION })
     setOpen(false)
   }
 
   return (
-    <div className="fixed inset-0 z-[9999]">
-      <div className="absolute inset-0 bg-warm-brown/40 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 pointer-events-auto">
+      {/* ✅ Overlay BELOW modal */}
+      <div
+        className="absolute inset-0 bg-warm-brown/40 backdrop-blur-sm z-0"
+        onClick={() => setOpen(false)} // optional: Klick außerhalb schließt
+      />
 
-      <div className="absolute inset-0 flex items-end sm:items-center justify-center p-4">
-        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden">
-
-          {/* HEADER */}
-          <div className="p-6 flex items-start justify-between gap-4">
-            <div>
-              <h3 className="font-fredoka text-2xl font-bold text-warm-brown">
-                Cookie-Einstellungen
-              </h3>
-              <p className="mt-2 font-nunito text-warm-brown/70">
-                Wir verwenden Cookies, um die Website sicher zu betreiben.
-                Mit deiner Zustimmung nutzen wir zusätzlich Statistik- oder Marketing-Cookies.
-              </p>
-            </div>
-
-            <button
-              onClick={() => setOpen(false)}
-              className="text-warm-brown/60 hover:text-petal-pink"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* BODY */}
-          <div className="px-6 pb-6">
-            <div className="bg-cream/60 border border-black/5 rounded-2xl p-4">
-              <p className="font-nunito text-sm text-warm-brown/75">
-                Details findest du in unserer{" "}
-                <a
-                  href="/datenschutz"
-                  className="text-petal-pink font-semibold hover:underline"
-                >
-                  Datenschutzerklärung
-                </a>.
-              </p>
-            </div>
-
-            {/* SETTINGS */}
-            <div className="mt-4">
-              <button
-                onClick={() => setShowSettings((v) => !v)}
-                className="font-nunito font-semibold text-warm-brown hover:text-petal-pink"
-              >
-                {showSettings ? "Einstellungen ausblenden" : "Einstellungen anzeigen"}
-              </button>
-
-              {showSettings && (
-                <div className="mt-4 space-y-4">
-
-                  {/* Notwendig */}
-                  <div className="p-4 rounded-2xl border bg-white">
-                    <p className="font-fredoka">Notwendig</p>
-                    <p className="font-nunito text-sm text-warm-brown/70">
-                      Erforderlich für Grundfunktionen.
-                    </p>
-                    <span className="text-xs font-bold text-mint-green">Immer aktiv</span>
-                  </div>
-
-                  {/* Statistik */}
-                  <div className="p-4 rounded-2xl border bg-white flex justify-between">
-                    <div>
-                      <p className="font-fredoka">Statistik</p>
-                      <p className="font-nunito text-sm text-warm-brown/70">
-                        Anonyme Auswertung zur Verbesserung der Website.
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={analytics}
-                      onChange={(e) => setAnalytics(e.target.checked)}
-                      className="h-4 w-4 accent-petal-pink"
-                    />
-                  </div>
-
-                  {/* Marketing */}
-                  <div className="p-4 rounded-2xl border bg-white flex justify-between">
-                    <div>
-                      <p className="font-fredoka">Marketing</p>
-                      <p className="font-nunito text-sm text-warm-brown/70">
-                        Personalisierte Werbung.
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={marketing}
-                      onChange={(e) => setMarketing(e.target.checked)}
-                      className="h-4 w-4 accent-petal-pink"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* BUTTONS */}
-            <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
-              <Button
-                variant="outline"
-                className="rounded-full font-fredoka"
-                onClick={acceptNecessaryOnly}
-              >
-                Nur notwendige
-              </Button>
-
-              <Button
-                className="rounded-full font-fredoka bg-gradient-to-r from-petal-pink to-peach text-white"
-                onClick={showSettings ? saveSettings : acceptAll}
-              >
-                {showSettings ? "Speichern" : "Alle akzeptieren"}
-              </Button>
-            </div>
-
-            <p className="mt-4 text-xs font-nunito text-warm-brown/50">
-              Deine Auswahl kannst du jederzeit über „Cookie-Einstellungen“ im Footer ändern.
+      {/* ✅ Modal ABOVE overlay */}
+      <div
+        className="relative z-10 w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden pointer-events-auto"
+        onClick={(e) => e.stopPropagation()} // verhindert Overlay-Klick
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* Header */}
+        <div className="p-6 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-fredoka text-2xl font-bold text-warm-brown">Cookie-Einstellungen</h3>
+            <p className="mt-2 font-nunito text-warm-brown/70">
+              Wir verwenden Cookies, um die Website sicher zu betreiben. Mit deiner Zustimmung nutzen wir zusätzlich
+              Statistik- oder Marketing-Cookies.
             </p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Schließen"
+            className="text-warm-brown/60 hover:text-petal-pink transition-colors"
+            title="Schließen"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 pb-6">
+          <div className="bg-cream/60 border border-black/5 rounded-2xl p-4">
+            <p className="font-nunito text-sm text-warm-brown/75">
+              Details findest du in unserer{" "}
+              <a href="/datenschutz" className="text-petal-pink font-semibold hover:underline">
+                Datenschutzerklärung
+              </a>
+              .
+            </p>
+          </div>
+
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => setShowSettings((v) => !v)}
+              className="font-nunito font-semibold text-warm-brown hover:text-petal-pink transition-colors"
+            >
+              {showSettings ? "Einstellungen ausblenden" : "Einstellungen anzeigen"}
+            </button>
+
+            {showSettings && (
+              <div className="mt-4 space-y-4">
+                <div className="p-4 rounded-2xl border border-black/5 bg-white">
+                  <p className="font-fredoka text-warm-brown">Notwendig</p>
+                  <p className="font-nunito text-sm text-warm-brown/70">Erforderlich für Grundfunktionen.</p>
+                  <span className="text-xs font-bold text-mint-green">Immer aktiv</span>
+                </div>
+
+                <div className="p-4 rounded-2xl border border-black/5 bg-white flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-fredoka text-warm-brown">Statistik</p>
+                    <p className="font-nunito text-sm text-warm-brown/70">
+                      Anonyme Auswertung zur Verbesserung der Website.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={analytics}
+                    onChange={(e) => setAnalytics(e.target.checked)}
+                    className="h-4 w-4 accent-petal-pink mt-1"
+                  />
+                </div>
+
+                <div className="p-4 rounded-2xl border border-black/5 bg-white flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-fredoka text-warm-brown">Marketing</p>
+                    <p className="font-nunito text-sm text-warm-brown/70">Personalisierte Werbung.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={marketing}
+                    onChange={(e) => setMarketing(e.target.checked)}
+                    className="h-4 w-4 accent-petal-pink mt-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Buttons */}
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full font-fredoka"
+              onClick={acceptNecessaryOnly}
+            >
+              Nur notwendige
+            </Button>
+
+            <Button
+              type="button"
+              className="rounded-full font-fredoka bg-gradient-to-r from-petal-pink to-peach text-white"
+              onClick={showSettings ? saveSettings : acceptAll}
+              title={showSettings ? "Auswahl speichern" : "Alle Cookies akzeptieren"}
+            >
+              {showSettings ? "Speichern" : "Alle akzeptieren"}
+            </Button>
+          </div>
+
+          <p className="mt-4 text-xs font-nunito text-warm-brown/50">
+            Deine Auswahl kannst du jederzeit über „Cookie-Einstellungen“ im Footer ändern.
+          </p>
         </div>
       </div>
     </div>
