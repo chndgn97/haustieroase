@@ -1,93 +1,59 @@
-import { useEffect, useRef, useState } from "react"
-import { Link } from "react-router-dom"
-import { Calendar, Clock, ArrowRight, User, Bookmark } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { Calendar, Clock, ArrowRight, User, Bookmark } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { getLatestBlogPosts } from "../data/blogPosts";
 
-const blogPosts = [
-  {
-    id: 1,
-    slug: "getreidefreies-hundefutter",
-    title: "Die besten Tipps für die Gesundheit deines Hundes",
-    excerpt:
-      "Erfahre, wie du deinen vierbeinigen Freund gesund und glücklich hältst. Von Ernährung bis Bewegung – alles Wichtige im Überblick.",
-    image: "/images/blog-health.jpg",
-    author: "Dr. Sarah Müller",
-    date: "15. Feb 2026",
-    readTime: "5 Min.",
-    category: "Gesundheit",
-    categoryColor: "bg-petal-pink",
-  },
-  {
-    id: 2,
-    slug: "orthopaedisches-hundebett",
-    title: "Hundetraining: Die Basics für Anfänger",
-    excerpt:
-      "Mit positiver Verstärkung und Geduld zum erfolgreichen Training. So lernt dein Hund schnell und mit Freude.",
-    image: "/images/blog-training.jpg",
-    author: "Markus Weber",
-    date: "12. Feb 2026",
-    readTime: "8 Min.",
-    category: "Training",
-    categoryColor: "bg-mint-green",
-  },
-  {
-    id: 3,
-    slug: "katzenfutter-zucker",
-    title: "Gesunde Ernährung für Katzen",
-    excerpt:
-      "Was braucht deine Katze wirklich? Wir zeigen dir die wichtigsten Nährstoffe und geben Tipps zur Fütterung.",
-    image: "/images/blog-nutrition.jpg",
-    author: "Lisa Schmidt",
-    date: "10. Feb 2026",
-    readTime: "6 Min.",
-    category: "Ernährung",
-    categoryColor: "bg-peach",
-  },
-  {
-    id: 4,
-    slug: "getreidefreies-hundefutter",
-    title: "Der erste Tag mit deinem Welpen",
-    excerpt:
-      "Alles, was du für einen erfolgreichen Start mit deinem neuen Familienmitglied wissen musst.",
-    image: "/images/blog-puppy.jpg",
-    author: "Anna Peters",
-    date: "8. Feb 2026",
-    readTime: "7 Min.",
-    category: "Welpen",
-    categoryColor: "bg-yellow-400",
-  },
-]
+function formatCategory(category: string) {
+  return category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+function formatDate(dateString?: string) {
+  if (!dateString) return "";
+  const d = new Date(dateString);
+  if (Number.isNaN(d.getTime())) return dateString;
+  return d.toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 const Blog = () => {
-  const [visibleCards, setVisibleCards] = useState<number[]>([])
-  const [savedPosts, setSavedPosts] = useState<number[]>([])
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
+  // ✅ Max. 4 neueste Beiträge aus /data/blogPosts.ts
+  const latestPosts = getLatestBlogPosts(4);
+
+  const [visibleCards, setVisibleCards] = useState<number[]>([]);
+  const [savedPosts, setSavedPosts] = useState<string[]>([]);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const index = cardRefs.current.indexOf(entry.target as HTMLDivElement)
+            const index = cardRefs.current.indexOf(entry.target as HTMLDivElement);
             if (index !== -1 && !visibleCards.includes(index)) {
-              setVisibleCards((prev) => [...prev, index])
+              setVisibleCards((prev) => [...prev, index]);
             }
           }
-        })
+        });
       },
       { threshold: 0.15, rootMargin: "0px 0px -50px 0px" }
-    )
+    );
 
     cardRefs.current.forEach((ref) => {
-      if (ref) observer.observe(ref)
-    })
+      if (ref) observer.observe(ref);
+    });
 
-    return () => observer.disconnect()
-  }, [visibleCards])
+    return () => observer.disconnect();
+  }, [visibleCards]);
 
-  const toggleSave = (id: number) => {
-    setSavedPosts((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]))
-  }
+  const toggleSave = (slug: string) => {
+    setSavedPosts((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+    );
+  };
 
   return (
     <section id="blog" className="py-20 lg:py-32 relative overflow-hidden">
@@ -110,7 +76,7 @@ const Blog = () => {
             </p>
           </div>
 
-          {/* ✅ Jetzt: Link zu /blog */}
+          {/* ✅ Link zu /blog */}
           <Link to="/blog" className="mt-6 lg:mt-0 inline-block">
             <Button
               variant="outline"
@@ -124,78 +90,109 @@ const Blog = () => {
 
         {/* Blog Grid */}
         <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
-          {blogPosts.map((post, index) => {
-            const isVisible = visibleCards.includes(index)
-            const isSaved = savedPosts.includes(post.id)
+          {latestPosts.map((post, index) => {
+            const isVisible = visibleCards.includes(index);
+            const isSaved = savedPosts.includes(post.slug);
+
+            // Optional fields with fallbacks
+            const author = post.author ?? "HaustierOase";
+            const date = formatDate(post.date);
+            const readTime = post.readTime ?? "";
+            const categoryLabel = formatCategory(post.category);
+
+            // Simple color mapping per category
+            const categoryColor =
+              post.category === "hunde"
+                ? "bg-mint-green"
+                : post.category === "katzen"
+                ? "bg-peach"
+                : "bg-petal-pink";
 
             return (
               <div
-                key={post.id}
+                key={post.slug}
                 ref={(el) => {
-                  cardRefs.current[index] = el
+                  cardRefs.current[index] = el;
                 }}
                 className={`group relative bg-white rounded-3xl overflow-hidden shadow-soft hover:shadow-pet-hover transition-all duration-500 hover:-translate-y-2 ${
                   isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
                 style={{ transitionDelay: `${index * 0.15}s` }}
               >
-                {/* Image */}
-                <div className="relative h-56 overflow-hidden">
-                  <img
-                    src={post.image}
-                    alt={post.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                {/* Image (clickable) */}
+                <Link to={`/blog/${post.slug}`} className="block">
+                  <div className="relative h-56 overflow-hidden">
+                    {post.image ? (
+                      <img
+                        src={post.image}
+                        alt={post.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-cream flex items-center justify-center text-warm-brown/40 text-sm">
+                        Kein Bild verfügbar
+                      </div>
+                    )}
 
-                  {/* Category Badge */}
-                  <div
-                    className={`absolute top-4 left-4 ${post.categoryColor} text-white text-xs font-nunito font-semibold px-3 py-1 rounded-full`}
-                  >
-                    {post.category}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+
+                    {/* Category Badge */}
+                    <div
+                      className={`absolute top-4 left-4 ${categoryColor} text-white text-xs font-nunito font-semibold px-3 py-1 rounded-full`}
+                    >
+                      {categoryLabel}
+                    </div>
                   </div>
+                </Link>
 
-                  {/* Save Button */}
-                  <button
-                    onClick={() => toggleSave(post.id)}
-                    className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                      isSaved
-                        ? "bg-petal-pink text-white"
-                        : "bg-white/80 backdrop-blur-sm text-warm-brown hover:bg-white"
-                    }`}
-                    aria-label="Beitrag speichern"
-                  >
-                    <Bookmark className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
-                  </button>
-                </div>
+                {/* Save Button (must not navigate) */}
+                <button
+                  onClick={() => toggleSave(post.slug)}
+                  className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    isSaved
+                      ? "bg-petal-pink text-white"
+                      : "bg-white/80 backdrop-blur-sm text-warm-brown hover:bg-white"
+                  }`}
+                  aria-label="Beitrag speichern"
+                  type="button"
+                >
+                  <Bookmark className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
+                </button>
 
                 {/* Content */}
                 <div className="p-6">
                   {/* Meta */}
-                  <div className="flex items-center gap-4 mb-3 text-sm text-warm-brown/60">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 text-sm text-warm-brown/60">
                     <div className="flex items-center gap-1">
                       <User className="w-4 h-4" />
-                      <span className="font-nunito">{post.author}</span>
+                      <span className="font-nunito">{author}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      <span className="font-nunito">{post.date}</span>
+                      <span className="font-nunito">{date}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span className="font-nunito">{post.readTime}</span>
-                    </div>
+                    {readTime && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span className="font-nunito">{readTime}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-fredoka text-xl font-semibold text-warm-brown mb-3 group-hover:text-petal-pink transition-colors line-clamp-2">
-                    {post.title}
-                  </h3>
+                  <Link to={`/blog/${post.slug}`} className="block">
+                    <h3 className="font-fredoka text-xl font-semibold text-warm-brown mb-3 group-hover:text-petal-pink transition-colors line-clamp-2">
+                      {post.title}
+                    </h3>
+                  </Link>
 
                   {/* Excerpt */}
-                  <p className="font-nunito text-warm-brown/70 mb-4 line-clamp-2">{post.excerpt}</p>
+                  <p className="font-nunito text-warm-brown/70 mb-4 line-clamp-2">
+                    {post.excerpt}
+                  </p>
 
-                  {/* ✅ Jetzt: Link zu /blog/:slug */}
+                  {/* Read more */}
                   <Link
                     to={`/blog/${post.slug}`}
                     className="inline-flex items-center gap-2 font-nunito font-semibold text-petal-pink hover:text-mint-green transition-colors group/link"
@@ -208,7 +205,7 @@ const Blog = () => {
                 {/* Hover Accent */}
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-petal-pink via-mint-green to-peach transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
               </div>
-            )
+            );
           })}
         </div>
 
@@ -233,7 +230,7 @@ const Blog = () => {
         </div>
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default Blog
+export default Blog;
