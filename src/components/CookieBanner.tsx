@@ -1,6 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
-import { X } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useRef, useState } from "react"
 
 type Consent = {
   necessary: true
@@ -13,7 +11,7 @@ type Consent = {
 const STORAGE_KEY = "haustieroase_cookie_consent"
 const CONSENT_VERSION = "1.0"
 
-const readConsent = (): Consent | null => {
+function readConsent(): Consent | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
@@ -28,17 +26,15 @@ const readConsent = (): Consent | null => {
   }
 }
 
-const writeConsent = (consent: Omit<Consent, "timestamp">) => {
+function writeConsent(consent: Omit<Consent, "timestamp">) {
   const payload: Consent = { ...consent, timestamp: Date.now() }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
   window.dispatchEvent(new CustomEvent("cookie-consent-changed", { detail: payload }))
 }
 
 export default function CookieBanner() {
-  const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-
   const [analytics, setAnalytics] = useState(false)
   const [marketing, setMarketing] = useState(false)
 
@@ -48,21 +44,15 @@ export default function CookieBanner() {
     if (didInit.current) return
     didInit.current = true
 
-    setMounted(true)
-
     const existing = readConsent()
-    if (existing) {
-      setAnalytics(existing.analytics)
-      setMarketing(existing.marketing)
-      setOpen(false)
+    if (!existing) {
+      setOpen(true)
       return
     }
-
-    // iOS: minimal verzögert öffnen (ohne RAF-Kaskade-Overlays)
-    setTimeout(() => setOpen(true), 50)
+    setAnalytics(existing.analytics)
+    setMarketing(existing.marketing)
   }, [])
 
-  // Footer -> Cookie Einstellungen öffnen
   useEffect(() => {
     const openHandler = () => {
       const existing = readConsent()
@@ -77,17 +67,6 @@ export default function CookieBanner() {
     return () => window.removeEventListener("open-cookie-settings", openHandler as EventListener)
   }, [])
 
-  // ESC close
-  useEffect(() => {
-    if (!open) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false)
-    }
-    window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
-  }, [open])
-
-  // Scroll lock
   useEffect(() => {
     if (!open) {
       document.body.style.overflow = ""
@@ -99,12 +78,7 @@ export default function CookieBanner() {
     }
   }, [open])
 
-  const hasConsent = useMemo(() => {
-    if (!mounted) return true
-    return Boolean(readConsent())
-  }, [mounted])
-
-  if (!mounted || (!open && hasConsent)) return null
+  if (!open) return null
 
   const close = () => setOpen(false)
 
@@ -113,165 +87,227 @@ export default function CookieBanner() {
     close()
   }
 
-  const acceptNecessaryOnly = () => {
+  const acceptNecessary = () => {
     writeConsent({ necessary: true, analytics: false, marketing: false, version: CONSENT_VERSION })
     close()
   }
 
-  const saveSettings = () => {
+  const save = () => {
     writeConsent({ necessary: true, analytics, marketing, version: CONSENT_VERSION })
     close()
   }
 
-  // ✅ iOS: sichere “Tap”-Handler
-  const tap = (fn: () => void) => ({
-    onPointerUp: (e: React.PointerEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      fn()
-    },
-    onTouchEnd: (e: React.TouchEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      fn()
-    },
-    onClick: (e: React.MouseEvent) => {
-      // Desktop fallback
-      e.preventDefault()
-      e.stopPropagation()
-      fn()
-    },
-  })
-
   return (
     <div
-      className="fixed inset-0 z-[9999]"
       style={{
-        WebkitTapHighlightColor: "transparent",
-        touchAction: "manipulation",
+        position: "fixed",
+        inset: 0,
+        zIndex: 999999,
       }}
     >
-      {/* ✅ Backdrop (klickbar) */}
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 z-0 bg-black/50"
-        {...tap(close)}
-        role="presentation"
+        onClick={close}
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0,0,0,0.55)",
+        }}
       />
 
-      {/* ✅ Modal */}
-      <div className="absolute inset-0 z-10 flex items-end sm:items-center justify-center p-4">
+      {/* Modal */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 16,
+          pointerEvents: "none", // ✅ nur Card bekommt Pointer Events
+        }}
+      >
         <div
-          className="w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden"
-          // wichtig: kein transform, kein blur, kein fancy stacking
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: "100%",
+            maxWidth: 720,
+            background: "white",
+            borderRadius: 24,
+            padding: 20,
+            boxShadow: "0 20px 80px rgba(0,0,0,0.25)",
+            pointerEvents: "auto", // ✅ Klicks nur hier
+            fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
+          }}
         >
-          <div className="p-6 flex items-start justify-between gap-4">
+          <div style={{ display: "flex", gap: 12, justifyContent: "space-between" }}>
             <div>
-              <h3 className="font-fredoka text-2xl font-bold text-warm-brown">Cookie-Einstellungen</h3>
-              <p className="mt-2 font-nunito text-warm-brown/70">
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#5d4e45" }}>Cookie-Einstellungen</div>
+              <div style={{ marginTop: 8, color: "rgba(93,78,69,0.75)", lineHeight: 1.4 }}>
                 Wir verwenden Cookies, um die Website sicher zu betreiben. Mit deiner Zustimmung nutzen wir zusätzlich
                 Statistik- oder Marketing-Cookies.
-              </p>
+              </div>
             </div>
 
-            {/* ✅ X (jetzt garantiert tappbar) */}
+            {/* X */}
             <button
               type="button"
-              className="text-warm-brown/60 hover:text-petal-pink transition-colors"
+              onClick={close}
+              style={{
+                border: "none",
+                background: "transparent",
+                fontSize: 26,
+                cursor: "pointer",
+                color: "rgba(93,78,69,0.7)",
+              }}
               aria-label="Schließen"
               title="Schließen"
-              {...tap(close)}
             >
-              <X className="w-6 h-6" />
+              ×
             </button>
           </div>
 
-          <div className="px-6 pb-6">
-            <div className="bg-cream/60 border border-black/5 rounded-2xl p-4">
-              <p className="font-nunito text-sm text-warm-brown/75">
-                Details findest du in unserer{" "}
-                <a href="/datenschutz" className="text-petal-pink font-semibold hover:underline">
-                  Datenschutzerklärung
-                </a>
-                .
-              </p>
-            </div>
+          <div
+            style={{
+              marginTop: 16,
+              background: "rgba(248,239,232,0.8)",
+              borderRadius: 16,
+              padding: 14,
+              border: "1px solid rgba(0,0,0,0.06)",
+              color: "rgba(93,78,69,0.8)",
+              fontSize: 14,
+            }}
+          >
+            Details findest du in unserer{" "}
+            <a href="/datenschutz" style={{ color: "#f08aa0", fontWeight: 700 }}>
+              Datenschutzerklärung
+            </a>
+            .
+          </div>
 
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={() => setShowSettings((v) => !v)}
-                className="font-nunito font-semibold text-warm-brown hover:text-petal-pink transition-colors"
-              >
-                {showSettings ? "Einstellungen ausblenden" : "Einstellungen anzeigen"}
-              </button>
+          <div style={{ marginTop: 14 }}>
+            <button
+              type="button"
+              onClick={() => setShowSettings((v) => !v)}
+              style={{
+                border: "none",
+                background: "transparent",
+                padding: 0,
+                cursor: "pointer",
+                color: "#5d4e45",
+                fontWeight: 700,
+              }}
+            >
+              {showSettings ? "Einstellungen ausblenden" : "Einstellungen anzeigen"}
+            </button>
 
-              {showSettings && (
-                <div className="mt-4 space-y-4">
-                  <div className="p-4 rounded-2xl border border-black/5 bg-white">
-                    <p className="font-fredoka text-warm-brown">Notwendig</p>
-                    <p className="font-nunito text-sm text-warm-brown/70">Erforderlich für Grundfunktionen.</p>
-                    <span className="text-xs font-bold text-mint-green">Immer aktiv</span>
-                  </div>
-
-                  <div className="p-4 rounded-2xl border border-black/5 bg-white flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-fredoka text-warm-brown">Statistik</p>
-                      <p className="font-nunito text-sm text-warm-brown/70">
-                        Anonyme Auswertung zur Verbesserung der Website.
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={analytics}
-                      onChange={(e) => setAnalytics(e.target.checked)}
-                      className="h-4 w-4 accent-petal-pink mt-1"
-                    />
-                  </div>
-
-                  <div className="p-4 rounded-2xl border border-black/5 bg-white flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-fredoka text-warm-brown">Marketing</p>
-                      <p className="font-nunito text-sm text-warm-brown/70">Personalisierte Werbung.</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={marketing}
-                      onChange={(e) => setMarketing(e.target.checked)}
-                      className="h-4 w-4 accent-petal-pink mt-1"
-                    />
+            {showSettings && (
+              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+                <div style={{ border: "1px solid rgba(0,0,0,0.06)", borderRadius: 16, padding: 14 }}>
+                  <div style={{ fontWeight: 800, color: "#5d4e45" }}>Notwendig</div>
+                  <div style={{ color: "rgba(93,78,69,0.7)", fontSize: 14, marginTop: 6 }}>
+                    Erforderlich für Grundfunktionen. Immer aktiv.
                   </div>
                 </div>
-              )}
-            </div>
 
-            <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
-              {/* ✅ Buttons: Tap über Pointer/Touch */}
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-full font-fredoka"
-                {...tap(acceptNecessaryOnly)}
-              >
-                Nur notwendige
-              </Button>
+                <label
+                  style={{
+                    border: "1px solid rgba(0,0,0,0.06)",
+                    borderRadius: 16,
+                    padding: 14,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 800, color: "#5d4e45" }}>Statistik</div>
+                    <div style={{ color: "rgba(93,78,69,0.7)", fontSize: 14, marginTop: 6 }}>
+                      Anonyme Auswertung zur Verbesserung der Website.
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={analytics}
+                    onChange={(e) => setAnalytics(e.target.checked)}
+                  />
+                </label>
 
-              <Button
-                type="button"
-                className="rounded-full font-fredoka bg-gradient-to-r from-petal-pink to-peach text-white"
-                {...tap(showSettings ? saveSettings : acceptAll)}
-              >
-                {showSettings ? "Speichern" : "Alle akzeptieren"}
-              </Button>
-            </div>
+                <label
+                  style={{
+                    border: "1px solid rgba(0,0,0,0.06)",
+                    borderRadius: 16,
+                    padding: 14,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 800, color: "#5d4e45" }}>Marketing</div>
+                    <div style={{ color: "rgba(93,78,69,0.7)", fontSize: 14, marginTop: 6 }}>
+                      Personalisierte Werbung (nur mit Zustimmung).
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={marketing}
+                    onChange={(e) => setMarketing(e.target.checked)}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
 
-            <p className="mt-4 text-xs font-nunito text-warm-brown/50">
-              Deine Auswahl kannst du jederzeit über „Cookie-Einstellungen“ im Footer ändern.
-            </p>
+          {/* Buttons */}
+          <div
+            style={{
+              marginTop: 18,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 10,
+              justifyContent: "flex-end",
+            }}
+          >
+            <button
+              type="button"
+              onClick={acceptNecessary}
+              style={{
+                padding: "10px 16px",
+                borderRadius: 999,
+                border: "1px solid rgba(0,0,0,0.12)",
+                background: "white",
+                cursor: "pointer",
+                fontWeight: 800,
+                color: "#5d4e45",
+              }}
+            >
+              Nur notwendige
+            </button>
+
+            <button
+              type="button"
+              onClick={showSettings ? save : acceptAll}
+              style={{
+                padding: "10px 16px",
+                borderRadius: 999,
+                border: "none",
+                background: "linear-gradient(90deg,#f08aa0,#f2b48a)",
+                color: "white",
+                cursor: "pointer",
+                fontWeight: 900,
+              }}
+            >
+              {showSettings ? "Speichern" : "Alle akzeptieren"}
+            </button>
+          </div>
+
+          <div style={{ marginTop: 12, fontSize: 12, color: "rgba(93,78,69,0.55)" }}>
+            Deine Auswahl kannst du jederzeit über „Cookie-Einstellungen“ im Footer ändern.
           </div>
         </div>
       </div>
