@@ -58,10 +58,11 @@ export default function CookieBanner() {
       return
     }
 
-    // iOS: erst nach Paint öffnen
-    requestAnimationFrame(() => requestAnimationFrame(() => setOpen(true)))
+    // iOS: minimal verzögert öffnen (ohne RAF-Kaskade-Overlays)
+    setTimeout(() => setOpen(true), 50)
   }, [])
 
+  // Footer -> Cookie Einstellungen öffnen
   useEffect(() => {
     const openHandler = () => {
       const existing = readConsent()
@@ -76,6 +77,7 @@ export default function CookieBanner() {
     return () => window.removeEventListener("open-cookie-settings", openHandler as EventListener)
   }, [])
 
+  // ESC close
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e: KeyboardEvent) => {
@@ -85,6 +87,7 @@ export default function CookieBanner() {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [open])
 
+  // Scroll lock
   useEffect(() => {
     if (!open) {
       document.body.style.overflow = ""
@@ -103,41 +106,69 @@ export default function CookieBanner() {
 
   if (!mounted || (!open && hasConsent)) return null
 
+  const close = () => setOpen(false)
+
   const acceptAll = () => {
     writeConsent({ necessary: true, analytics: true, marketing: true, version: CONSENT_VERSION })
-    setOpen(false)
+    close()
   }
 
   const acceptNecessaryOnly = () => {
     writeConsent({ necessary: true, analytics: false, marketing: false, version: CONSENT_VERSION })
-    setOpen(false)
+    close()
   }
 
   const saveSettings = () => {
     writeConsent({ necessary: true, analytics, marketing, version: CONSENT_VERSION })
-    setOpen(false)
+    close()
   }
 
-  return (
-    <div className="fixed inset-0 z-[9999]" style={{ WebkitTapHighlightColor: "transparent" }}>
-      {/* ✅ Backdrop ist der einzige “Außen-Klick”-Bereich */}
-      <div
-        className="absolute inset-0 z-0 bg-warm-brown/40"
-        onClick={() => setOpen(false)}
-      />
-      {/* Blur nur visuell, nicht klickbar */}
-      <div className="absolute inset-0 z-0 pointer-events-none backdrop-blur-sm" />
+  // ✅ iOS: sichere “Tap”-Handler
+  const tap = (fn: () => void) => ({
+    onPointerUp: (e: React.PointerEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      fn()
+    },
+    onTouchEnd: (e: React.TouchEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      fn()
+    },
+    onClick: (e: React.MouseEvent) => {
+      // Desktop fallback
+      e.preventDefault()
+      e.stopPropagation()
+      fn()
+    },
+  })
 
-      {/* ✅ Modal oben */}
+  return (
+    <div
+      className="fixed inset-0 z-[9999]"
+      style={{
+        WebkitTapHighlightColor: "transparent",
+        touchAction: "manipulation",
+      }}
+    >
+      {/* ✅ Backdrop (klickbar) */}
+      <div
+        className="absolute inset-0 z-0 bg-black/50"
+        {...tap(close)}
+        role="presentation"
+      />
+
+      {/* ✅ Modal */}
       <div className="absolute inset-0 z-10 flex items-end sm:items-center justify-center p-4">
         <div
+          className="w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden"
+          // wichtig: kein transform, kein blur, kein fancy stacking
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
-          className="w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-          style={{ WebkitTransform: "translateZ(0)" }}
         >
-          {/* Header */}
           <div className="p-6 flex items-start justify-between gap-4">
             <div>
               <h3 className="font-fredoka text-2xl font-bold text-warm-brown">Cookie-Einstellungen</h3>
@@ -147,18 +178,18 @@ export default function CookieBanner() {
               </p>
             </div>
 
+            {/* ✅ X (jetzt garantiert tappbar) */}
             <button
               type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Schließen"
               className="text-warm-brown/60 hover:text-petal-pink transition-colors"
+              aria-label="Schließen"
               title="Schließen"
+              {...tap(close)}
             >
               <X className="w-6 h-6" />
             </button>
           </div>
 
-          {/* Body */}
           <div className="px-6 pb-6">
             <div className="bg-cream/60 border border-black/5 rounded-2xl p-4">
               <p className="font-nunito text-sm text-warm-brown/75">
@@ -219,11 +250,12 @@ export default function CookieBanner() {
             </div>
 
             <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
+              {/* ✅ Buttons: Tap über Pointer/Touch */}
               <Button
                 type="button"
                 variant="outline"
                 className="rounded-full font-fredoka"
-                onClick={acceptNecessaryOnly}
+                {...tap(acceptNecessaryOnly)}
               >
                 Nur notwendige
               </Button>
@@ -231,7 +263,7 @@ export default function CookieBanner() {
               <Button
                 type="button"
                 className="rounded-full font-fredoka bg-gradient-to-r from-petal-pink to-peach text-white"
-                onClick={showSettings ? saveSettings : acceptAll}
+                {...tap(showSettings ? saveSettings : acceptAll)}
               >
                 {showSettings ? "Speichern" : "Alle akzeptieren"}
               </Button>
