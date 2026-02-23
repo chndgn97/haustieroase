@@ -42,10 +42,9 @@ export default function CookieBanner() {
   const [analytics, setAnalytics] = useState(false)
   const [marketing, setMarketing] = useState(false)
 
-  // wichtig: verhindert doppeltes "open" durch StrictMode in Dev
+  // verhindert doppeltes Init durch StrictMode
   const didInit = useRef(false)
 
-  // ✅ Initial load (mit iOS-safe Delay)
   useEffect(() => {
     if (didInit.current) return
     didInit.current = true
@@ -60,15 +59,10 @@ export default function CookieBanner() {
       return
     }
 
-    // ✅ iOS Safari Fix: NICHT sofort öffnen -> erst nach 2 Frames
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setOpen(true)
-      })
-    })
+    // iOS: erst nach Paint öffnen
+    requestAnimationFrame(() => requestAnimationFrame(() => setOpen(true)))
   }, [])
 
-  // ✅ Footer -> "Cookie-Einstellungen"
   useEffect(() => {
     const openHandler = () => {
       const existing = readConsent()
@@ -79,12 +73,10 @@ export default function CookieBanner() {
       setShowSettings(true)
       setOpen(true)
     }
-
     window.addEventListener("open-cookie-settings", openHandler as EventListener)
     return () => window.removeEventListener("open-cookie-settings", openHandler as EventListener)
   }, [])
 
-  // ESC close
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e: KeyboardEvent) => {
@@ -94,7 +86,6 @@ export default function CookieBanner() {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [open])
 
-  // Scroll lock
   useEffect(() => {
     if (!open) {
       document.body.style.overflow = ""
@@ -111,7 +102,6 @@ export default function CookieBanner() {
     return Boolean(readConsent())
   }, [mounted])
 
-  // Wenn Consent vorhanden und nicht explizit geöffnet -> nichts anzeigen
   if (!mounted || (!open && hasConsent)) return null
 
   const acceptAll = () => {
@@ -131,23 +121,29 @@ export default function CookieBanner() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] isolate"
+      className="fixed inset-0 z-[9999]"
       style={{ WebkitTapHighlightColor: "transparent" }}
     >
-      {/* VISUELL (nie klickbar) */}
-      <div className="absolute inset-0 bg-warm-brown/40 pointer-events-none" />
-      <div className="absolute inset-0 backdrop-blur-sm pointer-events-none" />
+      {/* ✅ BACKDROP (nur visuell, niemals klickbar) */}
+      <div className="absolute inset-0 z-0 pointer-events-none bg-warm-brown/40" />
+      <div className="absolute inset-0 z-0 pointer-events-none backdrop-blur-sm" />
 
-      {/* Click catcher (außerhalb schließen) */}
-      <div className="absolute inset-0" onClick={() => setOpen(false)} role="presentation" />
+      {/* ✅ CLICK-CATCHER: nur außerhalb Modal (z-10) */}
+      <button
+        type="button"
+        className="absolute inset-0 z-10 bg-transparent"
+        aria-label="Cookie Banner schließen"
+        onClick={() => setOpen(false)}
+      />
 
-      {/* Modal */}
-      <div className="absolute inset-0 flex items-end sm:items-center justify-center p-4">
+      {/* ✅ MODAL: ganz oben (z-20) */}
+      <div className="absolute inset-0 z-20 flex items-end sm:items-center justify-center p-4">
         <div
-          className="w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
+          className="w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+          // iOS stacking/touch stabilisieren
           style={{ WebkitTransform: "translateZ(0)" }}
         >
           {/* Header */}
@@ -245,7 +241,6 @@ export default function CookieBanner() {
                 type="button"
                 className="rounded-full font-fredoka bg-gradient-to-r from-petal-pink to-peach text-white"
                 onClick={showSettings ? saveSettings : acceptAll}
-                title={showSettings ? "Auswahl speichern" : "Alle Cookies akzeptieren"}
               >
                 {showSettings ? "Speichern" : "Alle akzeptieren"}
               </Button>
