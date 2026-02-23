@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from "react"
 import { Menu, X, PawPrint, Heart, ShoppingBag, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+type NavLink =
+  | { name: string; href: string; type: "scroll" }
+  | { name: string; href: string; type: "route" }
+
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -22,11 +26,16 @@ const Navigation = () => {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  const navLinks = [
-    { name: "Startseite", href: "#hero", type: "scroll" as const },
-    { name: "Kategorien", href: "#categories", type: "scroll" as const },
-    { name: "Ratgeber", href: "#blog", type: "scroll" as const },
-    { name: "Produkte", href: "#products", type: "scroll" as const },
+  // ✅ Navigation links:
+  // - Startseite/Kategorien/Ratgeber scrollen auf Home
+  // - Produkte ist jetzt eine eigene Seite (/produkte)
+  // - Über uns ist eigene Seite (/ueber-uns)
+  const navLinks: NavLink[] = [
+    { name: "Startseite", href: "#hero", type: "scroll" },
+    { name: "Kategorien", href: "#categories", type: "scroll" },
+    { name: "Ratgeber", href: "#blog", type: "scroll" },
+    { name: "Produkte", href: "/produkte", type: "route" },
+    { name: "Über uns", href: "/ueber-uns", type: "route" },
   ]
 
   const closeMobile = () => setIsMobileMenuOpen(false)
@@ -34,7 +43,6 @@ const Navigation = () => {
   const openNewsletter = () => {
     closeMobile()
     setIsNewsletterOpen(true)
-    // Fokus nach dem Render setzen
     setTimeout(() => emailInputRef.current?.focus(), 0)
   }
 
@@ -55,6 +63,7 @@ const Navigation = () => {
     closeMobile()
   }
 
+  // ✅ Wenn wir über "/#section" kommen -> scrollen
   useEffect(() => {
     if (location.pathname !== "/") return
     if (!location.hash) return
@@ -62,13 +71,16 @@ const Navigation = () => {
     return () => window.clearTimeout(t)
   }, [location.pathname, location.hash])
 
-  const handleNavClick = (e: React.MouseEvent, link: (typeof navLinks)[0]) => {
+  const handleNavClick = (e: React.MouseEvent, link: NavLink) => {
     e.preventDefault()
+
     if (link.type === "scroll") {
       goToSection(link.href)
       return
     }
-    window.open(link.href, "_blank")
+
+    // route link
+    navigate(link.href)
     closeMobile()
   }
 
@@ -100,8 +112,7 @@ const Navigation = () => {
       return
     }
 
-    // TODO: Hier später Mailchimp/Brevo/Backend anbinden.
-    // Für jetzt: kleine Bestätigung.
+    // TODO: später Mailchimp/Brevo/Backend
     alert("Danke! 🎉 Du bist (demo) für den Newsletter eingetragen.")
     setEmail("")
     closeNewsletter()
@@ -152,6 +163,8 @@ const Navigation = () => {
                 size="icon"
                 className="text-warm-brown hover:text-petal-pink hover:bg-petal-pink/10"
                 aria-label="Favoriten"
+                onClick={() => navigate("/produkte?liked=1")}
+                title="Favoriten"
               >
                 <Heart className="w-5 h-5" />
               </Button>
@@ -246,9 +259,7 @@ const Navigation = () => {
               <div className="p-6 sm:p-8">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="font-fredoka text-2xl font-bold text-warm-brown">
-                      Newsletter abonnieren
-                    </h3>
+                    <h3 className="font-fredoka text-2xl font-bold text-warm-brown">Newsletter abonnieren</h3>
                     <p className="mt-2 font-nunito text-warm-brown/70">
                       Erhalte Produkttipps, Deals & Ratgeber – 1–2x pro Monat. Kein Spam.
                     </p>
@@ -291,8 +302,7 @@ const Navigation = () => {
                   </div>
 
                   <p className="mt-3 text-xs font-nunito text-warm-brown/50">
-                    Mit Klick auf „Anmelden“ stimmst du zu, E-Mails von HaustierOase zu erhalten.
-                    Abmelden jederzeit möglich.
+                    Mit Klick auf „Anmelden“ stimmst du zu, E-Mails von HaustierOase zu erhalten. Abmelden jederzeit möglich.
                   </p>
                 </form>
               </div>
