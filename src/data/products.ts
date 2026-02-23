@@ -4,7 +4,8 @@ export const products = [
   // -----------------------
   {
     id: "premium-hundefutter",
-    category: "hunde",
+    pet: "hunde",
+    type: "nahrung",
     name: "Premium Hundefutter",
     description: "Natürliche Zutaten, getreidefrei",
     image: "/images/product-food.jpg",
@@ -18,7 +19,8 @@ export const products = [
   },
   {
     id: "echtleder-halsband",
-    category: "hunde",
+    pet: "hunde",
+    type: "zubehoer",
     name: "Echtleder Halsband",
     description: "Handgefertigt, personalisierbar",
     image: "/images/product-collar.jpg",
@@ -32,7 +34,8 @@ export const products = [
   },
   {
     id: "hundebett-xl",
-    category: "hunde",
+    pet: "hunde",
+    type: "schlafplatz",
     name: "Hundebett XL",
     description: "Orthopädisch, waschbar, extra bequem",
     image: "/images/product-bed.jpg",
@@ -50,7 +53,8 @@ export const products = [
   // -----------------------
   {
     id: "katzenfutter-premium",
-    category: "katzen",
+    pet: "katzen",
+    type: "nahrung",
     name: "Premium Katzenfutter",
     description: "Hoher Fleischanteil, ohne Zuckerzusatz",
     image: "/images/category-cats.jpg",
@@ -64,7 +68,8 @@ export const products = [
   },
   {
     id: "kratzbaum-kompakt",
-    category: "katzen",
+    pet: "katzen",
+    type: "spielzeug",
     name: "Kratzbaum Kompakt",
     description: "Stabil, platzsparend, mit Kuschelhöhle",
     image: "/images/product-toys.jpg",
@@ -82,7 +87,8 @@ export const products = [
   // -----------------------
   {
     id: "kleintier-heu-premium",
-    category: "kleintiere",
+    pet: "kleintiere",
+    type: "nahrung",
     name: "Premium Wiesenheu",
     description: "Aromatisch, staubarm, ideal für Kaninchen",
     image: "/images/category-small.jpg",
@@ -96,7 +102,8 @@ export const products = [
   },
   {
     id: "nagerspielzeug-set",
-    category: "kleintiere",
+    pet: "kleintiere",
+    type: "spielzeug",
     name: "Nagerspielzeug Set",
     description: "Natürliches Holz, fördert Beschäftigung",
     image: "/images/product-toys.jpg",
@@ -114,7 +121,8 @@ export const products = [
   // -----------------------
   {
     id: "vogelfutter-mix",
-    category: "voegel",
+    pet: "voegel",
+    type: "nahrung",
     name: "Vogelfutter Mix",
     description: "Ausgewogene Mischung, ohne Füllstoffe",
     image: "/images/category-birds.jpg",
@@ -128,7 +136,8 @@ export const products = [
   },
   {
     id: "sitzstangen-natur",
-    category: "voegel",
+    pet: "voegel",
+    type: "zubehoer",
     name: "Natur Sitzstangen",
     description: "Verschiedene Durchmesser, gelenkschonend",
     image: "/images/product-collar.jpg",
@@ -146,7 +155,8 @@ export const products = [
   // -----------------------
   {
     id: "aquarium-starter-kit",
-    category: "aquaristik",
+    pet: "aquaristik",
+    type: "zubehoer",
     name: "Aquarium Starter Kit",
     description: "Einfacher Start: Zubehör + Basics",
     image: "/images/category-aqua.jpg",
@@ -160,7 +170,8 @@ export const products = [
   },
   {
     id: "fischfutter-premium",
-    category: "aquaristik",
+    pet: "aquaristik",
+    type: "nahrung",
     name: "Fischfutter Premium",
     description: "Schwimmend, gut verträglich",
     image: "/images/product-food.jpg",
@@ -174,11 +185,12 @@ export const products = [
   },
 
   // -----------------------
-  // ZUBEHÖR
+  // ZUBEHÖR (Tierübergreifend)
   // -----------------------
   {
     id: "pflegeset-haustier",
-    category: "zubehoer",
+    pet: "alle",
+    type: "pflege",
     name: "Pflegeset Haustier",
     description: "Bürste + Kamm + Pflegehandschuh",
     image: "/images/product-bed.jpg",
@@ -192,7 +204,8 @@ export const products = [
   },
   {
     id: "reise-trinkflasche",
-    category: "zubehoer",
+    pet: "alle",
+    type: "zubehoer",
     name: "Reise Trinkflasche",
     description: "Auslaufsicher, ideal für unterwegs",
     image: "/images/product-collar.jpg",

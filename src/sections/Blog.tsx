@@ -20,7 +20,6 @@ function formatDate(dateString?: string) {
 }
 
 const Blog = () => {
-  // ✅ Max. 4 neueste Beiträge aus /data/blogPosts.ts
   const latestPosts = getLatestBlogPosts(4);
 
   const [visibleCards, setVisibleCards] = useState<number[]>([]);
@@ -76,7 +75,7 @@ const Blog = () => {
             </p>
           </div>
 
-          {/* ✅ Link zu /blog */}
+          {/* Link zu /blog */}
           <Link to="/blog" className="mt-6 lg:mt-0 inline-block">
             <Button
               variant="outline"
@@ -94,13 +93,11 @@ const Blog = () => {
             const isVisible = visibleCards.includes(index);
             const isSaved = savedPosts.includes(post.slug);
 
-            // Optional fields with fallbacks
             const author = post.author ?? "HaustierOase";
             const date = formatDate(post.date);
             const readTime = post.readTime ?? "";
             const categoryLabel = formatCategory(post.category);
 
-            // Simple color mapping per category
             const categoryColor =
               post.category === "hunde"
                 ? "bg-mint-green"
@@ -146,7 +143,7 @@ const Blog = () => {
                   </div>
                 </Link>
 
-                {/* Save Button (must not navigate) */}
+                {/* Save Button */}
                 <button
                   onClick={() => toggleSave(post.slug)}
                   className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
@@ -207,26 +204,6 @@ const Blog = () => {
               </div>
             );
           })}
-        </div>
-
-        {/* Newsletter Teaser */}
-        <div className="mt-16 bg-gradient-to-r from-petal-pink/10 via-mint-green/10 to-peach/10 rounded-3xl p-8 lg:p-12">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-            <div className="text-center lg:text-left">
-              <h3 className="font-fredoka text-2xl font-semibold text-warm-brown mb-2">
-                Keinen Artikel mehr verpassen!
-              </h3>
-              <p className="font-nunito text-warm-brown/70">
-                Abonniere unseren Newsletter und erhalte die neuesten Ratgeber direkt in dein Postfach.
-              </p>
-            </div>
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-petal-pink to-peach text-white font-fredoka font-semibold rounded-full px-8 shadow-pet hover:shadow-pet-hover transition-all duration-300 hover:-translate-y-1 whitespace-nowrap"
-            >
-              Newsletter abonnieren
-            </Button>
-          </div>
         </div>
       </div>
     </section>

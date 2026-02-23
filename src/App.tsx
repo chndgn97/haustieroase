@@ -5,6 +5,7 @@ import Footer from "./components/Footer"
 import ScrollToTop from "./components/ScrollToTop"
 
 import Home from "./pages/Home"
+import ProductsPage from "./pages/ProductsPage"
 import BlogIndex from "./pages/BlogIndex"
 import BlogPost from "./pages/BlogPost"
 import ProductDetail from "./pages/ProductDetail"
@@ -19,6 +20,9 @@ export default function App() {
       <Routes>
         {/* Startseite */}
         <Route path="/" element={<Home />} />
+
+        {/* Alle Produkte */}
+        <Route path="/produkte" element={<ProductsPage />} />
 
         {/* Blog Übersicht */}
         <Route path="/blog" element={<BlogIndex />} />
