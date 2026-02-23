@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -42,20 +42,33 @@ export default function CookieBanner() {
   const [analytics, setAnalytics] = useState(false)
   const [marketing, setMarketing] = useState(false)
 
-  // Initial load
+  // wichtig: verhindert doppeltes "open" durch StrictMode in Dev
+  const didInit = useRef(false)
+
+  // ✅ Initial load (mit iOS-safe Delay)
   useEffect(() => {
+    if (didInit.current) return
+    didInit.current = true
+
     setMounted(true)
+
     const existing = readConsent()
-    if (!existing) {
-      setOpen(true)
+    if (existing) {
+      setAnalytics(existing.analytics)
+      setMarketing(existing.marketing)
+      setOpen(false)
       return
     }
-    setAnalytics(existing.analytics)
-    setMarketing(existing.marketing)
-    setOpen(false)
+
+    // ✅ iOS Safari Fix: NICHT sofort öffnen -> erst nach 2 Frames
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setOpen(true)
+      })
+    })
   }, [])
 
-  // Footer -> Cookie-Einstellungen öffnen
+  // ✅ Footer -> "Cookie-Einstellungen"
   useEffect(() => {
     const openHandler = () => {
       const existing = readConsent()
@@ -66,6 +79,7 @@ export default function CookieBanner() {
       setShowSettings(true)
       setOpen(true)
     }
+
     window.addEventListener("open-cookie-settings", openHandler as EventListener)
     return () => window.removeEventListener("open-cookie-settings", openHandler as EventListener)
   }, [])
@@ -97,6 +111,7 @@ export default function CookieBanner() {
     return Boolean(readConsent())
   }, [mounted])
 
+  // Wenn Consent vorhanden und nicht explizit geöffnet -> nichts anzeigen
   if (!mounted || (!open && hasConsent)) return null
 
   const acceptAll = () => {
@@ -119,25 +134,20 @@ export default function CookieBanner() {
       className="fixed inset-0 z-[9999] isolate"
       style={{ WebkitTapHighlightColor: "transparent" }}
     >
-      {/* ✅ Backdrop VISUELL – aber NIE klickbar (iOS Fix) */}
+      {/* VISUELL (nie klickbar) */}
       <div className="absolute inset-0 bg-warm-brown/40 pointer-events-none" />
       <div className="absolute inset-0 backdrop-blur-sm pointer-events-none" />
 
-      {/* ✅ Click-Catcher für "außerhalb klicken" (klickbar) */}
-      <div
-        className="absolute inset-0"
-        onClick={() => setOpen(false)}
-        role="presentation"
-      />
+      {/* Click catcher (außerhalb schließen) */}
+      <div className="absolute inset-0" onClick={() => setOpen(false)} role="presentation" />
 
-      {/* ✅ Modal Layer */}
+      {/* Modal */}
       <div className="absolute inset-0 flex items-end sm:items-center justify-center p-4">
         <div
           className="w-full max-w-2xl bg-white rounded-3xl shadow-pet-hover border border-black/5 overflow-hidden"
           onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
-          // ✅ iOS Safari Touch/Stack Fix
           style={{ WebkitTransform: "translateZ(0)" }}
         >
           {/* Header */}
@@ -173,7 +183,6 @@ export default function CookieBanner() {
               </p>
             </div>
 
-            {/* Settings */}
             <div className="mt-4">
               <button
                 type="button"
@@ -222,7 +231,6 @@ export default function CookieBanner() {
               )}
             </div>
 
-            {/* Buttons */}
             <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
               <Button
                 type="button"
